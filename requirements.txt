@@ -1,2 +1,4 @@
 streamlit
 Pillow
+boto3  # Example for AWS S3
+# google-cloud-storage # Example for Google Cloud Storage
