@@ -13,59 +13,23 @@ IMAGE_URLS_FILE = 'image_urls.csv'
 def get_image_urls():
     try:
         # Read the CSV file using pandas
-        # Assuming your URLs are in the first column (index 0)
-        # and your CSV might or might not have a header.
-        # If it HAS a header, and the column name is, for example, 'url_column':
-        # df = pd.read_csv(IMAGE_URLS_FILE)
-        # urls = df['url_column'].dropna().tolist()
-
-        # If it has NO header, and URLs are in the first column:
-        # df = pd.read_csv(IMAGE_URLS_FILE, header=None)
-        # urls = df[0].dropna().tolist()
-
-        # A more robust way, trying to guess if there's a header for the first column:
-        df = pd.read_csv(IMAGE_URLS_FILE, header=None) # Read without assuming header first
+        df = pd.read_csv(IMAGE_URLS_FILE)
         
-        # Check if the first row, first column looks like a URL (basic check)
-        # If your CSV definitely has a header row, e.g. the first row is "image_url_header",
-        # then use: df = pd.read_csv(IMAGE_URLS_FILE)
-        # And then:  urls = df["image_url_header"].dropna().astype(str).tolist()
-
-        # For now, let's assume the most common cases:
-        # Case 1: CSV has a header, and the URL column is named (e.g., 'url', 'image_url')
-        # Case 2: CSV has no header, URLs are in the first column.
-
-        try:
-            # Try reading with header first
-            df_with_header = pd.read_csv(IMAGE_URLS_FILE)
-            # Attempt to find a column that likely contains URLs (simple check for 'http')
-            url_column = None
-            for col in df_with_header.columns:
-                if df_with_header[col].astype(str).str.contains('http', case=False).any():
-                    url_column = col
-                    break
-            
-            if url_column:
-                urls = df_with_header[url_column].dropna().astype(str).tolist()
-                st.info(f"Reading URLs from column '{url_column}' with header.")
-            else: # Fallback to no header, first column
-                df_no_header = pd.read_csv(IMAGE_URLS_FILE, header=None)
-                urls = df_no_header[0].dropna().astype(str).tolist()
-                st.info("Reading URLs from the first column, assuming no header.")
-
-        except Exception as e_pandas:
-            st.error(f"Pandas error reading CSV: {e_pandas}. Trying basic read of first column.")
-            # Fallback to a very simple read if pandas has complex issues (less likely for this problem)
-            df_no_header = pd.read_csv(IMAGE_URLS_FILE, header=None)
-            urls = df_no_header[0].dropna().astype(str).tolist()
-
+        # Check if we have the expected 'url' column
+        if 'url' in df.columns:
+            # Filter out problematic URLs that contain 'httpss.mj.run'
+            valid_urls = df[~df['url'].astype(str).str.contains('httpss.mj.run')]['url'].dropna().astype(str).tolist()
+            st.info(f"Found {len(valid_urls)} valid image URLs out of {len(df)} total records.")
+        else:
+            st.error(f"Could not find 'url' column in {IMAGE_URLS_FILE}. Available columns: {', '.join(df.columns)}")
+            return []
 
         # Clean up any leading/trailing whitespace from URLs
-        urls = [str(url).strip() for url in urls if str(url).strip().startswith('http')]
+        valid_urls = [url.strip() for url in valid_urls if url.strip().startswith('http')]
         
-        if not urls:
-            st.error(f"No valid URLs found in {IMAGE_URLS_FILE} after parsing.")
-        return urls
+        if not valid_urls:
+            st.error(f"No valid URLs found in {IMAGE_URLS_FILE} after filtering.")
+        return valid_urls
 
     except FileNotFoundError:
         st.error(f"Error: The file {IMAGE_URLS_FILE} was not found. Make sure it's in your GitHub repository root.")
@@ -78,38 +42,52 @@ def get_image_urls():
         return []
 
 st.title("Random Image Collection")
+st.write("This app displays random images from an S3 bucket collection of over 10,000 images.")
+
+# Add some explanation 
+with st.expander("About this app"):
+    st.write("""
+    This app randomly selects and displays images from an AWS S3 bucket containing artwork.
+    Use the slider below to select how many images you'd like to see at once, then click the button.
+    
+    Note: Some images in the collection may not load correctly due to URL formatting issues.
+    The app automatically filters out problematic URLs.
+    """)
+
 count = st.slider("How many images to show?", 1, 10, 5)
 
 if st.button("Show Random Images"):
-    urls = get_image_urls()
-    if not urls:
-        st.warning("No image URLs available to display.")
-    else:
-        if len(urls) < count:
-            st.warning(f"Not enough images ({len(urls)}) to display {count}. Displaying all available.")
-            chosen_urls = urls
+    with st.spinner("Loading images..."):
+        urls = get_image_urls()
+        if not urls:
+            st.warning("No image URLs available to display.")
         else:
-            chosen_urls = random.sample(urls, count)
+            if len(urls) < count:
+                st.warning(f"Not enough images ({len(urls)}) to display {count}. Displaying all available.")
+                chosen_urls = urls
+            else:
+                chosen_urls = random.sample(urls, count)
 
-        # Dynamically adjust columns based on how many images are actually chosen
-        cols = st.columns(len(chosen_urls))
-        for i, img_url in enumerate(chosen_urls):
-            col = cols[i] # Assign to the correct column
-            if not isinstance(img_url, str) or not img_url.startswith('http'):
-                col.error(f"Invalid URL format: {img_url}")
-                continue
-            try:
-                response = requests.get(img_url)
-                response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
-                img = Image.open(BytesIO(response.content))
-                # Extract filename from URL for caption (basic)
-                caption = os.path.basename(img_url.split('?')[0])
-                col.image(img, caption=caption, use_column_width=True)
-            except requests.exceptions.MissingSchema:
-                col.error(f"Error: Invalid URL (Missing schema http/https): {img_url.split('/')[-1]}")
-            except requests.exceptions.ConnectionError:
-                col.error(f"Error: Could not connect to: {img_url.split('/')[-1]}")
-            except requests.exceptions.RequestException as e:
-                col.error(f"Error fetching: {img_url.split('/')[-1]}\n{type(e).__name__}")
-            except Exception as e:
-                col.error(f"Error opening: {img_url.split('/')[-1]}\n{type(e).__name__}")
+            # Use st.columns instead of st.beta_columns (which is deprecated)
+            cols = st.columns(min(len(chosen_urls), 3))  # Max 3 images per row for better layout
+            
+            for i, img_url in enumerate(chosen_urls):
+                col = cols[i % len(cols)]  # Wrap around to new rows
+                
+                try:
+                    response = requests.get(img_url, timeout=5)  # Add timeout to prevent hanging
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    img = Image.open(BytesIO(response.content))
+                    
+                    # Extract filename from URL for caption (basic)
+                    caption = os.path.basename(img_url.split('?')[0])
+                    
+                    # Display the image
+                    col.image(img, caption=caption, use_column_width=True)
+                    
+                except requests.exceptions.RequestException as e:
+                    col.error(f"Error fetching image: {type(e).__name__}")
+                    col.write(f"URL: {img_url.split('/')[-1]}")
+                except Exception as e:
+                    col.error(f"Error: {type(e).__name__}")
+                    col.write(f"URL: {img_url.split('/')[-1]}")
