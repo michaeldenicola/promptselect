@@ -18,8 +18,8 @@ def get_image_urls():
         # Check if we have the expected 'url' column
         if 'url' in df.columns:
             # Filter out problematic URLs that contain 'httpss.mj.run'
-            valid_urls = df[~df['url'].astype(str).str.contains('httpss.mj.run')]['url'].dropna().astype(str).tolist()
-            st.info(f"Found {len(valid_urls)} valid image URLs out of {len(df)} total records.")
+            #valid_urls = df[~df['url'].astype(str).str.contains('httpss.mj.run')]['url'].dropna().astype(str).tolist()
+            #st.info(f"Found {len(valid_urls)} valid image URLs out of {len(df)} total records.")
         else:
             st.error(f"Could not find 'url' column in {IMAGE_URLS_FILE}. Available columns: {', '.join(df.columns)}")
             return []
