@@ -52,7 +52,7 @@ if st.button("Show Random Images"):
                 img = Image.open(BytesIO(response.content))
                 # Extract filename from URL for caption
                 caption = img_url.split('/')[-1].split('?')[0] # Basic way to get filename
-                col.image(img, caption=caption, use_column_width=True)
+                col.image(img, caption=caption, use_container_width=True)
             except requests.exceptions.RequestException as e:
                 col.error(f"Error fetching: {img_url.split('/')[-1]}\n{e}")
             except Exception as e:
