@@ -10,6 +10,20 @@ import os # To help with caption
 # Make sure this file is in your GitHub repository
 IMAGE_URLS_FILE = 'image_urls.csv'
 
+RAW_CSV = (
+    "https://raw.githubusercontent.com/"
+    "michaeldenicola/random_image/main/image_urls.csv"
+)
+# Explicitly name your columns and let pandas skip the index column:
+df = pd.read_csv(
+    RAW_CSV,
+    header=0,                   # first line in file is the header
+    names=["index", "url"],     # define two columns
+    usecols=["url"],            # only keep the URL column
+)
+urls = df["url"].tolist()
+
+
 # OPTION 2: Or, if the list isn't too massive, embed it directly (less scalable)
 # IMAGE_URLS = [
 #     "https://your-bucket-name.s3.your-region.amazonaws.com/image1.jpg",
