@@ -10,35 +10,7 @@ import os # To help with caption
 IMAGE_URLS_FILE = 'image_urls.csv'
 
 @st.cache_data
-    try:
-        # Read the CSV file using pandas
-        df = pd.read_csv(IMAGE_URLS_FILE)
-        
-        # Check if we have the expected 'url' column
-        if 'url' in df.columns:
-            # Filter out problematic URLs that contain 'httpss.mj.run'
-            valid_urls = df[~df['url'].astype(str).str.contains('httpss.mj.run')]['url'].dropna().astype(str).tolist()
-            st.info(f"Found {len(valid_urls)} valid image URLs out of {len(df)} total records.")
-        else:
-            st.error(f"Could not find 'url' column in {IMAGE_URLS_FILE}. Available columns: {', '.join(df.columns)}")
-            return []
-
-        # Clean up any leading/trailing whitespace from URLs
-        valid_urls = [url.strip() for url in valid_urls if url.strip().startswith('http')]
-        
-        if not valid_urls:
-            st.error(f"No valid URLs found in {IMAGE_URLS_FILE} after filtering.")
-        return valid_urls
-
-    except FileNotFoundError:
-        st.error(f"Error: The file {IMAGE_URLS_FILE} was not found. Make sure it's in your GitHub repository root.")
-        return []
-    except pd.errors.EmptyDataError:
-        st.error(f"Error: The file {IMAGE_URLS_FILE} is empty.")
-        return []
-    except Exception as e:
-        st.error(f"An error occurred while reading image URLs: {e}")
-        return []
+   
 
 st.title("Random Image Collection")
 st.write("This app displays random images from an S3 bucket collection of over 10,000 images.")
