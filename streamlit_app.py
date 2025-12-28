@@ -1,6 +1,7 @@
 import random
 from PIL import Image
 import streamlit as st
+import base64
 import requests # To fetch images from URLs
 from io import BytesIO # To handle image data in memory
 import pandas as pd # Import pandas
@@ -16,6 +17,24 @@ IMAGE_URLS_FILE = 'image_urls.csv'
 #     "https://your-bucket-name.s3.your-region.amazonaws.com/image2.png",
 #     # ... add all 10,000 URLs here (can be cumbersome)
 # ]
+
+st.markdown("""
+<style>
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    justify-items: center;
+}
+.image-grid img {
+    width: 200px;
+    height: auto;
+    border-radius: 8px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 
 @st.cache_data
 def get_image_urls():
@@ -43,9 +62,18 @@ if st.button("Show Random Images"):
             chosen_urls = urls
         else:
             chosen_urls = random.sample(urls, count)
+html = '<div class="image-grid">'
 
-        cols = st.columns(len(chosen_urls))
-        for col, img_url in zip(cols, chosen_urls):
+for img in images:
+    img_b64 = image_to_base64(img)
+    html += f'''
+        <img src="data:image/png;base64,{img_b64}">
+    '''
+
+html += '</div>'
+
+st.markdown(html, unsafe_allow_html=True)
+
             try:
                 response = requests.get(img_url)
                 response.raise_for_status() # Raise an exception for HTTP errors
@@ -57,4 +85,10 @@ if st.button("Show Random Images"):
                 col.error(f"Error fetching: {img_url.split('/')[-1]}\n{e}")
             except Exception as e:
                 col.error(f"Error opening: {img_url.split('/')[-1]}\n{e}")
+
+
+def image_to_base64(img):
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
 
