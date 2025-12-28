@@ -7,30 +7,40 @@ from io import BytesIO
 # Configuration
 IMAGE_URLS_FILE = 'image_urls.csv'
 
-# 1. Custom CSS for a Fixed Grid with Consistent Image Sizes
+# 1. Custom CSS for Masonry-Style Layout with Native Ratios
 st.markdown("""
 <style>
 .image-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    justify-content: center;
+    column-count: 3;
+    column-gap: 15px;
+    padding: 10px;
 }
-.image-grid img {
-    width: 200px !important;
-    height: 200px !important;
-    min-width: 200px;
-    min-height: 200px;
-    max-width: 200px;
-    max-height: 200px;
-    object-fit: cover;
+.image-item {
+    break-inside: avoid;
+    margin-bottom: 15px;
+}
+.image-item img {
+    width: 100%;
+    height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s;
-    flex-shrink: 0;
+    display: block;
 }
-.image-grid img:hover {
-    transform: scale(1.05);
+.image-item img:hover {
+    transform: scale(1.02);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .image-grid {
+        column-count: 2;
+    }
+}
+@media (max-width: 600px) {
+    .image-grid {
+        column-count: 1;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -58,10 +68,10 @@ if st.button("Show Random Images"):
         num_to_sample = min(len(urls), count)
         chosen_urls = random.sample(urls, num_to_sample)
         
-        # 2. Build the HTML Grid
+        # 2. Build the HTML Masonry Grid
         html_content = '<div class="image-grid">'
         for url in chosen_urls:
-            html_content += f'<img src="{url}" alt="Random Image">'
+            html_content += f'<div class="image-item"><img src="{url}" alt="Random Image"></div>'
         html_content += '</div>'
         
         # 3. Render the grid
