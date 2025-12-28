@@ -7,25 +7,30 @@ from io import BytesIO
 # Configuration
 IMAGE_URLS_FILE = 'image_urls.csv'
 
-# 1. Custom CSS for a Fixed Grid
+# 1. Custom CSS for a Fixed Grid with Consistent Image Sizes
 st.markdown("""
 <style>
 .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 15px;
     justify-content: center;
 }
 .image-grid img {
-    width: 200px;
-    height: 200px; /* Forces a uniform square size */
-    object-fit: cover; /* Ensures images aren't stretched/squashed */
+    width: 200px !important;
+    height: 200px !important;
+    min-width: 200px;
+    min-height: 200px;
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: cover;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    flex-shrink: 0;
 }
 .image-grid img:hover {
-    transform: scale(1.05); /* Subtle pop for your illustrations */
+    transform: scale(1.05);
 }
 </style>
 """, unsafe_allow_html=True)
