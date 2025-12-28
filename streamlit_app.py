@@ -31,7 +31,7 @@ def get_image_urls():
     # return IMAGE_URLS
 
 st.title("Random Image Collection")
-count = st.slider("How many images to show?", 1, 10, 5)
+count = st.slider("How many images to show?", 1, 20, 5)
 
 if st.button("Show Random Images"):
     urls = get_image_urls()
@@ -57,3 +57,4 @@ if st.button("Show Random Images"):
                 col.error(f"Error fetching: {img_url.split('/')[-1]}\n{e}")
             except Exception as e:
                 col.error(f"Error opening: {img_url.split('/')[-1]}\n{e}")
+
