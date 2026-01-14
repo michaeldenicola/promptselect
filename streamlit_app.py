@@ -56,7 +56,7 @@ def get_image_urls():
         return []
 
 st.title("🎨 Random Image Collection")
-count = st.slider("How many images to show?", 1, 30, 10)
+count = st.slider("How many images to show?", 1, 100, 10)
 
 if st.button("Show Random Images"):
     urls = get_image_urls()
@@ -75,3 +75,4 @@ if st.button("Show Random Images"):
         
         # 3. Render the grid
         st.markdown(html_content, unsafe_allow_html=True)
+
