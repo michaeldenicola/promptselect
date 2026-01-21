@@ -1,26 +1,12 @@
 """
-Niji 6 Illustrator Partner - Visual Edition
-A prompt builder with clickable style thumbnails for Midjourney's Niji 6.
-
-Features:
-- Clickable image thumbnails for style selection
-- Quick 2-second chooser
-- Randomizer for creative inspiration
-- Full micro-tuning controls
-- Command history
+Niji 6 Illustrator Partner
+Visual prompt builder for Midjourney's Niji 6.
 """
 
 import streamlit as st
 import random
 from dataclasses import dataclass, field
 from typing import Optional, List
-
-# Try to import image selection component (optional)
-try:
-    from streamlit_image_select import image_select
-    HAS_IMAGE_SELECT = True
-except ImportError:
-    HAS_IMAGE_SELECT = False
 
 # -----------------------------
 # Page Config
@@ -33,7 +19,7 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Custom CSS - Dark Manga Theme
+# Custom CSS
 # -----------------------------
 st.markdown("""
 <style>
@@ -42,7 +28,6 @@ st.markdown("""
     :root {
         --bg-dark: #0a0a0f;
         --bg-card: #14141f;
-        --bg-card-hover: #1a1a2a;
         --accent: #e94560;
         --accent-secondary: #6b5ce7;
         --text-primary: #ffffff;
@@ -54,8 +39,7 @@ st.markdown("""
         background: linear-gradient(180deg, var(--bg-dark) 0%, #12121f 100%);
     }
     
-    /* Typography */
-    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    h1, h2, h3 {
         font-family: 'Outfit', sans-serif !important;
         font-weight: 700 !important;
     }
@@ -65,92 +49,9 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        font-size: 2.5rem !important;
+        font-size: 2.2rem !important;
     }
     
-    /* Card containers */
-    .preset-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .preset-card {
-        background: var(--bg-card);
-        border: 2px solid var(--border);
-        border-radius: 16px;
-        padding: 1rem;
-        cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .preset-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
-        opacity: 0;
-        transition: opacity 0.25s ease;
-    }
-    
-    .preset-card:hover {
-        border-color: var(--accent);
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(233, 69, 96, 0.2);
-    }
-    
-    .preset-card:hover::before {
-        opacity: 1;
-    }
-    
-    .preset-card.active {
-        border-color: var(--accent);
-        background: linear-gradient(145deg, #1a1525 0%, #201530 100%);
-        box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
-    }
-    
-    .preset-card.active::before {
-        opacity: 1;
-    }
-    
-    .preset-card .icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .preset-card h4 {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0 0 0.3rem 0;
-        font-size: 1rem;
-    }
-    
-    .preset-card p {
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        margin: 0;
-        line-height: 1.3;
-    }
-    
-    .rating-badge {
-        display: inline-block;
-        background: rgba(233, 69, 96, 0.15);
-        color: var(--accent);
-        padding: 0.15rem 0.5rem;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        margin-top: 0.5rem;
-    }
-    
-    /* Command output */
     .command-output {
         background: #080810;
         border: 1px solid var(--accent);
@@ -158,49 +59,12 @@ st.markdown("""
         padding: 1.25rem;
         margin: 1rem 0;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: #00ff88;
         line-height: 1.7;
         word-break: break-word;
-        position: relative;
     }
     
-    .command-output::before {
-        content: '>';
-        position: absolute;
-        left: 1rem;
-        top: 1.25rem;
-        color: var(--accent);
-        font-weight: bold;
-    }
-    
-    /* Quick chooser pills */
-    .quick-pills {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin: 1rem 0;
-    }
-    
-    .quick-pill {
-        background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-hover) 100%);
-        border: 1px solid var(--border);
-        color: var(--text-secondary);
-        padding: 0.5rem 1rem;
-        border-radius: 25px;
-        font-size: 0.85rem;
-        font-family: 'Outfit', sans-serif;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .quick-pill:hover {
-        border-color: var(--accent);
-        color: var(--text-primary);
-        background: linear-gradient(135deg, #1a1525 0%, #251535 100%);
-    }
-    
-    /* Info panel */
     .info-panel {
         background: linear-gradient(135deg, rgba(107, 92, 231, 0.1) 0%, rgba(233, 69, 96, 0.05) 100%);
         border-left: 3px solid var(--accent-secondary);
@@ -221,7 +85,6 @@ st.markdown("""
         font-size: 0.9rem;
     }
     
-    /* Section headers */
     .section-header {
         display: flex;
         align-items: center;
@@ -240,58 +103,41 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
-    .section-header h3 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
-    
-    /* Divider */
     .divider {
         height: 1px;
         background: linear-gradient(90deg, transparent 0%, var(--border) 50%, transparent 100%);
         margin: 2rem 0;
     }
     
-    /* Button overrides */
+    .rating-badge {
+        display: inline-block;
+        background: rgba(233, 69, 96, 0.15);
+        color: var(--accent);
+        padding: 0.15rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 0.3rem;
+    }
+    
     .stButton > button {
         font-family: 'Outfit', sans-serif;
         font-weight: 500;
         border-radius: 10px;
-        transition: all 0.2s ease;
     }
     
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, var(--accent) 0%, #ff6b7a 100%);
-        border: none;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
-    }
-    
-    /* Input styling */
     .stTextInput input {
         background: var(--bg-card) !important;
         border: 1px solid var(--border) !important;
         border-radius: 10px !important;
         color: var(--text-primary) !important;
-        font-family: 'Outfit', sans-serif !important;
     }
     
     .stTextInput input:focus {
         border-color: var(--accent) !important;
-        box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2) !important;
     }
     
-    /* Slider */
-    .stSlider [data-baseweb="slider"] [data-testid="stThumbValue"] {
-        color: var(--accent);
-    }
-    
-    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background: transparent;
         gap: 0.5rem;
     }
     
@@ -301,7 +147,6 @@ st.markdown("""
         border-radius: 10px;
         color: var(--text-secondary);
         font-family: 'Outfit', sans-serif;
-        padding: 0.75rem 1.25rem;
     }
     
     .stTabs [aria-selected="true"] {
@@ -310,62 +155,7 @@ st.markdown("""
         color: var(--text-primary);
     }
     
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: var(--bg-card);
-        border-radius: 10px;
-        font-family: 'Outfit', sans-serif;
-    }
-    
-    /* Hide default elements */
     #MainMenu, footer, header {visibility: hidden;}
-    
-    /* Thumbnail grid for images */
-    .thumb-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
-        margin: 1rem 0;
-    }
-    
-    .thumb-item {
-        aspect-ratio: 1;
-        background: var(--bg-card);
-        border: 2px solid var(--border);
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-    }
-    
-    .thumb-item:hover {
-        border-color: var(--accent);
-        transform: scale(1.03);
-    }
-    
-    .thumb-item.selected {
-        border-color: var(--accent);
-        box-shadow: 0 0 20px rgba(233, 69, 96, 0.4);
-    }
-    
-    .thumb-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .thumb-label {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(transparent, rgba(0,0,0,0.8));
-        padding: 0.5rem;
-        font-size: 0.75rem;
-        color: white;
-        text-align: center;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -386,27 +176,14 @@ class StylePreset:
     sref: Optional[str] = None
     sw: int = 30
     notes: str = ""
-    tags: List[str] = field(default_factory=list)
     rating: str = ""
-    # Placeholder image URL - replace with actual style previews
-    thumbnail: str = ""
 
 
 # -----------------------------
 # Preset Database
 # -----------------------------
-# Placeholder images from Unsplash for demo - replace with actual style previews
-PLACEHOLDER_IMAGES = {
-    "action": "https://images.unsplash.com/photo-1612178537253-bccd437b730e?w=300&h=300&fit=crop",
-    "sketch": "https://images.unsplash.com/photo-1604871000636-074fa5117945?w=300&h=300&fit=crop",
-    "cinematic": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=300&fit=crop",
-    "painterly": "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=300&h=300&fit=crop",
-    "clean": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=300&h=300&fit=crop",
-    "horror": "https://images.unsplash.com/photo-1509248961895-b4bfc7da2be3?w=300&h=300&fit=crop",
-}
-
 PRESETS = [
-    # ACTION CATEGORY
+    # ACTION
     StylePreset(
         id="action_manga",
         name="Action Manga",
@@ -419,9 +196,7 @@ PRESETS = [
         sref="3334207109",
         sw=30,
         notes="PERFECT 4/4! Your 'easy button' for action scenes.",
-        tags=["panel", "action", "ink"],
-        rating="4/4 ⭐",
-        thumbnail=PLACEHOLDER_IMAGES["action"]
+        rating="4/4 ⭐"
     ),
     StylePreset(
         id="sketchbook_inoue",
@@ -433,9 +208,7 @@ PRESETS = [
         base_prompt="In the style of Takehiko Inoue, manga panel, halftone, screentone, sketchbook aesthetic, graphite pencil and ink",
         profile="xp1wzqg",
         notes="Great for dramatic character close-ups.",
-        tags=["sketch", "gritty", "pencil"],
-        rating="Favorite",
-        thumbnail=PLACEHOLDER_IMAGES["sketch"]
+        rating="Favorite"
     ),
     StylePreset(
         id="artgerm_glamour",
@@ -449,12 +222,10 @@ PRESETS = [
         sref="3334207109",
         sw=35,
         notes="Use --stylize 1000 for max detail.",
-        tags=["glamour", "comic", "polished"],
-        rating="Powerful",
-        thumbnail=PLACEHOLDER_IMAGES["action"]
+        rating="Powerful"
     ),
     
-    # CINEMATIC CATEGORY
+    # CINEMATIC
     StylePreset(
         id="movie_frame",
         name="Movie Frame",
@@ -465,9 +236,7 @@ PRESETS = [
         base_prompt="Movie frame from Akira directed by Ghibli, wideshot, cinematic composition, atmospheric lighting, manga inspired",
         profile="xp1wzqg",
         notes="Rated 5/4! High-budget anime movie feel.",
-        tags=["cinematic", "wideshot", "atmospheric"],
-        rating="5/4 🏆",
-        thumbnail=PLACEHOLDER_IMAGES["cinematic"]
+        rating="5/4 🏆"
     ),
     StylePreset(
         id="painterly_cover",
@@ -480,9 +249,7 @@ PRESETS = [
         profile="xp1wzqg",
         sref="2180084546",
         notes="Best sref for cover art and fantasy portraits.",
-        tags=["cover", "painterly", "emotional"],
-        rating="Best SREF",
-        thumbnail=PLACEHOLDER_IMAGES["painterly"]
+        rating="Best SREF"
     ),
     StylePreset(
         id="wlop_charming",
@@ -495,12 +262,10 @@ PRESETS = [
         profile="xp1wzqg",
         sref="2180084546",
         notes="Excellent for fantasy character concepts.",
-        tags=["fantasy", "charming", "character"],
-        rating="High Level",
-        thumbnail=PLACEHOLDER_IMAGES["painterly"]
+        rating="High Level"
     ),
     
-    # GRAPHIC CATEGORY
+    # GRAPHIC
     StylePreset(
         id="single_line",
         name="Single-Line",
@@ -513,9 +278,7 @@ PRESETS = [
         sref="3599646714::1",
         sw=35,
         notes="Excellent single line weight. Clean and minimal.",
-        tags=["clean", "minimal", "line"],
-        rating="Excellent",
-        thumbnail=PLACEHOLDER_IMAGES["clean"]
+        rating="Excellent"
     ),
     StylePreset(
         id="likeness_line",
@@ -528,9 +291,7 @@ PRESETS = [
         profile="xp1wzqg",
         sref="2033610796::1",
         notes="Does well with likeness even without cref.",
-        tags=["likeness", "clean", "fidelity"],
-        rating="Good Likeness",
-        thumbnail=PLACEHOLDER_IMAGES["clean"]
+        rating="Good Likeness"
     ),
     StylePreset(
         id="horror_cover",
@@ -542,13 +303,10 @@ PRESETS = [
         base_prompt="In the style of Junji Ito, Gege Akutami, Kazuma Kaneko, manga cover, eerie mood, high-contrast black and white, unsettling detail",
         profile="xp1wzqg",
         notes="Really creepy... worth experimenting!",
-        tags=["horror", "creepy", "dark"],
-        rating="Banger 🔥",
-        thumbnail=PLACEHOLDER_IMAGES["horror"]
+        rating="Banger 🔥"
     ),
 ]
 
-# Quick chooser mapping
 QUICK_MAP = {
     "⚡ Action Panel": "action_manga",
     "🎬 Movie Frame": "movie_frame", 
@@ -586,7 +344,6 @@ def select_preset(preset_id: str):
     st.session_state.selected_id = preset_id
 
 def randomize():
-    """Randomize preset and optionally subject."""
     st.session_state.selected_id = random.choice(PRESETS).id
     subjects = [
         "cyberpunk samurai, neon katana",
@@ -601,7 +358,6 @@ def randomize():
     st.session_state.subject = random.choice(subjects)
 
 def build_command(preset: StylePreset, subject: str, scene: str, sw: int, stylize: int, ar: str, cref: str, cw: int, sexy_mode: bool) -> str:
-    """Build the final /imagine command."""
     parts = [preset.base_prompt]
     if subject.strip():
         parts.append(subject.strip())
@@ -636,7 +392,7 @@ def build_command(preset: StylePreset, subject: str, scene: str, sw: int, styliz
 st.markdown("# 🎨 Niji 6 Illustrator Partner")
 st.caption("Visual prompt builder for manga & anime styles")
 
-# Quick Chooser Row
+# Quick Chooser
 st.markdown('<div class="section-header"><div class="icon">⚡</div><h3>Quick Pick</h3></div>', unsafe_allow_html=True)
 
 cols = st.columns(len(QUICK_MAP))
@@ -648,7 +404,7 @@ for i, (label, preset_id) in enumerate(QUICK_MAP.items()):
             select_preset(preset_id)
             st.rerun()
 
-# Randomize and Sexy Jutsu toggle
+# Randomize and toggle
 col_r, col_s, _ = st.columns([1, 1, 4])
 with col_r:
     if st.button("🎲 Randomize", use_container_width=True):
@@ -659,40 +415,21 @@ with col_s:
 
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-# Main Layout: Style Picker | Prompt Builder
+# Main: Style Library | Build Prompt
 left, right = st.columns([1.3, 1])
 
 with left:
     st.markdown('<div class="section-header"><div class="icon">🎭</div><h3>Style Library</h3></div>', unsafe_allow_html=True)
     
-    # Use tabs for categories
     cat_tabs = st.tabs([f"{'⚡' if c=='Action' else '🎬' if c=='Cinematic' else '✏️'} {c}" for c in CATEGORIES])
     
     for tab, category in zip(cat_tabs, CATEGORIES):
         with tab:
             cat_presets = [p for p in PRESETS if p.category == category]
             
-            # If image_select is available, use it for thumbnails
-            if HAS_IMAGE_SELECT and all(p.thumbnail for p in cat_presets):
-                selected_img = image_select(
-                    label="Select a style:",
-                    images=[p.thumbnail for p in cat_presets],
-                    captions=[f"{p.icon} {p.name}" for p in cat_presets],
-                    use_container_width=True,
-                    return_value="index",
-                    key=f"img_select_{category}"
-                )
-                if selected_img is not None and selected_img >= 0:
-                    selected_preset = cat_presets[selected_img]
-                    if st.session_state.selected_id != selected_preset.id:
-                        select_preset(selected_preset.id)
-                        st.rerun()
-            
-            # Card-based fallback (always shown for detailed info)
             for preset in cat_presets:
                 is_selected = st.session_state.selected_id == preset.id
                 
-                # Card container
                 with st.container():
                     card_col, btn_col = st.columns([4, 1])
                     
@@ -715,7 +452,6 @@ with right:
     
     current = get_preset(st.session_state.selected_id)
     
-    # Selected style info
     st.markdown(f"""
     <div class="info-panel">
         <h5>{current.icon} {current.name}</h5>
@@ -726,7 +462,6 @@ with right:
     if current.notes:
         st.info(f"💡 {current.notes}")
     
-    # Inputs
     subject = st.text_input(
         "Subject / Character",
         value=st.session_state.subject,
@@ -743,7 +478,6 @@ with right:
     )
     st.session_state.scene = scene
     
-    # Micro-tuning expander
     with st.expander("⚙️ Micro-Tuning", expanded=True):
         c1, c2 = st.columns(2)
         with c1:
@@ -758,13 +492,12 @@ with right:
         
         ar = st.text_input("Aspect Ratio", "2:3", help="e.g., 2:3, 16:9, 1:1")
         
-        # Advanced: Character reference
         st.markdown("##### Character Reference (Optional)")
         cref_col1, cref_col2 = st.columns([3, 1])
         with cref_col1:
             cref = st.text_input("--cref URL", "", placeholder="Grayscale image URL", label_visibility="collapsed")
         with cref_col2:
-            cw = st.number_input("--cw", 0, 100, 20, help="Character weight (20-30 typical)")
+            cw = st.number_input("--cw", 0, 100, 20, help="Character weight")
     
     # Command output
     st.markdown("### 📋 Command")
@@ -772,17 +505,14 @@ with right:
     cmd = build_command(current, subject, scene, sw, stylize, ar, cref, cw, st.session_state.sexy_mode)
     
     st.markdown(f'<div class="command-output">{cmd}</div>', unsafe_allow_html=True)
+    
+    # Copyable code block
     st.code(cmd, language=None)
     
-    # Action buttons
-    b1, b2 = st.columns(2)
-    with b1:
-        if st.button("📋 Copy (use code above)", use_container_width=True):
-            st.toast("Select and copy from the code block above!", icon="📋")
-    with b2:
-        if st.button("💾 Save to History", use_container_width=True):
-            st.session_state.history.append({"name": current.name, "cmd": cmd})
-            st.toast("Saved!", icon="✅")
+    # Save button
+    if st.button("💾 Save to History", use_container_width=True):
+        st.session_state.history.append({"name": current.name, "cmd": cmd})
+        st.toast("Saved!", icon="✅")
 
 # History
 if st.session_state.history:
@@ -795,7 +525,7 @@ if st.session_state.history:
             st.markdown(f"**{i+1}. {h['name']}**")
             st.code(h['cmd'], language=None)
 
-# Footer tips
+# Footer
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align: center; color: #666; font-size: 0.8rem; padding: 1rem;">
