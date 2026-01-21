@@ -48,28 +48,76 @@ st.set_page_config(
 # ============== CUSTOM CSS ============== #
 st.markdown("""
 <style>
-    .main-image {
-        max-height: 70vh;
-        width: auto;
-        margin: 0 auto;
-        display: block;
+    /* Pinterest-style card hover effect */
+    .stImage {
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+    
+    .stImage:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    /* Card container styling */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        background-color: rgba(30, 30, 30, 0.5);
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 12px;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        font-size: 0.85rem;
+        padding: 0.25rem 0;
+    }
+    
+    /* Make images rounded */
+    .stImage img {
+        border-radius: 8px;
+    }
+    
+    /* Reduce padding in columns for tighter grid */
+    [data-testid="column"] {
+        padding: 0 4px;
+    }
+    
+    /* Style the shuffle button */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
+        transform: scale(1.02);
+    }
+    
+    /* Metadata box styling */
     .metadata-box {
         background-color: #1e1e1e;
         padding: 1rem;
         border-radius: 0.5rem;
         margin-top: 1rem;
     }
+    
+    /* Stat card styling */
     .stat-card {
         background-color: #262730;
         padding: 1rem;
         border-radius: 0.5rem;
         text-align: center;
     }
-    .thumbnail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 0.5rem;
+    
+    /* Caption styling */
+    .stCaption {
+        font-size: 0.75rem;
+        opacity: 0.8;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -143,8 +191,8 @@ def filter_images(
 
 # ============== PAGES ============== #
 def page_random():
-    """Random image viewer with filters."""
-    st.title("🎲 Random Image")
+    """Random image viewer with Pinterest-style gallery."""
+    st.title("🎲 Random Images")
     
     df = load_manifest()
     if df.empty:
@@ -175,6 +223,14 @@ def page_random():
                 min_value=min_date,
                 max_value=max_date
             )
+        
+        st.divider()
+        
+        # Number of images to show
+        num_images = st.slider("Number of images", min_value=10, max_value=100, value=50, step=10)
+        
+        # Column layout
+        num_columns = st.slider("Columns", min_value=3, max_value=6, value=4)
     
     # Apply filters
     filtered_df = filter_images(
@@ -185,12 +241,12 @@ def page_random():
         date_range=date_range if use_date_filter else None
     )
     
-    st.caption(f"Showing from {len(filtered_df):,} images (filtered from {len(df):,} total)")
+    st.caption(f"Showing {min(num_images, len(filtered_df))} random images from {len(filtered_df):,} (filtered from {len(df):,} total)")
     
-    # Random button
+    # Shuffle button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🎲 Get Random Image", use_container_width=True, type="primary"):
+        if st.button("🎲 Shuffle Images", use_container_width=True, type="primary"):
             st.session_state.random_seed = random.randint(0, 999999)
     
     # Initialize or get random seed
@@ -201,35 +257,35 @@ def page_random():
         st.warning("No images match your filters.")
         return
     
-    # Select random image
+    # Select random images
     random.seed(st.session_state.random_seed)
-    selected_idx = random.randint(0, len(filtered_df) - 1)
-    image_data = filtered_df.iloc[selected_idx]
+    sample_size = min(num_images, len(filtered_df))
+    random_indices = random.sample(range(len(filtered_df)), sample_size)
+    selected_images = filtered_df.iloc[random_indices]
     
-    # Display image
-    st.image(image_data['url'], use_container_width=True)
+    # Create Pinterest-style masonry grid using columns
+    cols = st.columns(num_columns)
     
-    # Metadata
-    with st.expander("📋 Image Details", expanded=True):
-        col1, col2 = st.columns(2)
+    for idx, (_, image_data) in enumerate(selected_images.iterrows()):
+        col_idx = idx % num_columns
         
-        with col1:
-            st.markdown(f"**Source:** {image_data.get('source', 'N/A')}")
-            st.markdown(f"**Platform:** {image_data.get('platform', 'N/A')}")
-            st.markdown(f"**Model:** {image_data.get('model_version', 'N/A')}")
-        
-        with col2:
-            st.markdown(f"**Date:** {image_data.get('created_at', 'N/A')}")
-            st.markdown(f"**Seed:** {image_data.get('seed', 'N/A')}")
-            st.markdown(f"**Aspect:** {image_data.get('aspect_ratio', 'N/A')}")
-        
-        if image_data.get('prompt'):
-            st.markdown("**Prompt:**")
-            st.code(image_data['prompt'], language=None)
-            
-            if st.button("📋 Copy Prompt"):
-                st.write("Prompt copied to clipboard!")
-                st.session_state.clipboard = image_data['prompt']
+        with cols[col_idx]:
+            # Create a card-like container
+            with st.container():
+                # Image
+                st.image(image_data['url'], use_container_width=True)
+                
+                # Show prompt preview on hover (using expander as workaround)
+                if image_data.get('prompt'):
+                    prompt_preview = str(image_data['prompt'])[:80] + "..." if len(str(image_data.get('prompt', ''))) > 80 else str(image_data.get('prompt', ''))
+                    with st.expander("📋 Details", expanded=False):
+                        st.caption(f"**Prompt:** {image_data.get('prompt', 'N/A')}")
+                        st.caption(f"**Source:** {image_data.get('source', 'N/A')} | **Model:** {image_data.get('model_version', 'N/A')}")
+                        if st.button("📋 Copy Prompt", key=f"copy_{idx}"):
+                            st.code(image_data.get('prompt', ''), language=None)
+                
+                # Small spacing between cards
+                st.write("")
 
 
 def page_search():
