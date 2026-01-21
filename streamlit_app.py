@@ -3,313 +3,142 @@ import random
 from dataclasses import dataclass, asdict
 from typing import List, Optional
 
-st.set_page_config(page_title="Niji Prompt Builder (Bare Bones)", layout="centered")
+st.set_page_config(page_title="Niji 6 Pro Builder", layout="wide")
 
 # -----------------------------
-# Presets (edit these over time)
+# Core Data from Notes
 # -----------------------------
 @dataclass
 class Preset:
     name: str
     description: str
-    base_prompt: str               # Prompt skeleton (no params)
-    profile: str                   # --profile
-    niji: str = "6"                # --niji 6
-    sref: Optional[str] = None     # default --sref (can be overwritten)
-    sw: Optional[int] = None       # default --sw
-    stylize: Optional[int] = None  # optional --stylize
-    notes: str = ""                # quick guidance
+    base_prompt: str
+    profile: str
+    sref: Optional[str] = None
+    sw: Optional[int] = None
+    notes: str = ""
 
-PRESETS: List[Preset] = [
-    Preset(
-        name="Action Manga Panel (Perspective, Half-body)",
-        description="Reliable manga panel energy; dynamic pose, foreshortening, camera angle.",
-        base_prompt=(
-            "Black and white manga panel, half-body, dramatic perspective, dynamic pose, "
-            "foreshortening, speed lines, expressive face, strong silhouette, {subject}"
-            "{scene}"
+# Presets accurately mapped to your "Default Stacks" [cite: 84, 86, 87]
+PRESETS = {
+    "Action": [
+        Preset(
+            name="Action Manga Panel (Easy Button)",
+            description="Your most consistent lane for high-energy scenes[cite: 88].",
+            base_prompt="Black and white Manga Panel, perspective, dynamic pose, motion lines, dramatic foreshortening, expressive face, fine details, {subject}, {scene}",
+            profile="xp1wzqg",
+            sref="3334207109",
+            sw=30,
+            notes="Rated PERFECT 4/4! Use for character action and clean ink/tones."
         ),
-        profile="xp1wzqg",
-        sref="3334207109",
-        sw=30,
-        notes="If it doesn't look 'manga' enough, raise --sw to 35–50. Keep subject concise."
-    ),
-    Preset(
-        name="Seductive Heroine Panel (Half-body)",
-        description="Pose-forward pin-up energy while staying manga/ink.",
-        base_prompt=(
-            "Black and white manga panel, half-body, seductive confident pose, shoulder-forward angle, "
-            "head tilt, sharp eyes, clean inking, subtle screentone shadows, {subject}"
-            "{scene}"
+        Preset(
+            name="Sketchbook (Inoue Lane)",
+            description="Rough graphite and textured hatching[cite: 91].",
+            base_prompt="In the style of Takehiko Inoue, manga panel, halftone, screentone, sketchbook aesthetic, graphite pencil and ink, {subject}, {scene}",
+            profile="xp1wzqg",
+            notes="Author sketch feel. Great for 'human' linework and human expressions[cite: 91]."
         ),
-        profile="xp1wzqg",
-        sref="3334207109",
-        sw=35,
-        notes="If it gets too glam-rendered, drop --sw to 30. Add 'impact frame' for punch."
-    ),
-    Preset(
-        name="Single Line Weight Sketch (Clean Graphic)",
-        description="Crisp contour lines, minimal hatching, graphic simplicity.",
-        base_prompt=(
-            "Black and white single-line weight sketch, half-body portrait, clean contour lines, "
-            "minimal hatching, confident strokes, manga influence, {subject}"
-            "{scene}"
+    ],
+    "Cinematic": [
+        Preset(
+            name="Movie Frame (Akira/Ghibli)",
+            description="High-budget film stills and wide compositions[cite: 90].",
+            base_prompt="Movie frame from Akira directed by Ghibli, wideshot, cinematic composition, atmospheric lighting, manga inspired, {scene}, {subject}",
+            profile="xp1wzqg",
+            notes="Your 5/4 rated lane. Excellent for world-building[cite: 90, 101]."
         ),
-        profile="xp1wzqg",
-        sref="3599646714::1",
-        sw=30,
-        notes="If line weight varies too much, raise --sw. Keep prompt short."
-    ),
-    Preset(
-        name="Sketchbook Portrait (Inoue lane)",
-        description="Rough graphite/ink sketchbook vibe; textured hatching and imperfection.",
-        base_prompt=(
-            "Takehiko Inoue sketchbook aesthetic, half-body portrait, graphite pencil and ink, "
-            "loose sketch lines, crosshatching, screentone/halftone, imperfect strokes, {subject}"
-            "{scene}"
+        Preset(
+            name="Painterly Cover",
+            description="Emotional and illustrative 'book cover' vibe[cite: 86, 92].",
+            base_prompt="Painterly manga book cover, emotional atmosphere, detailed rendering, high contrast, {subject}, {scene}",
+            profile="xp1wzqg",
+            sref="2180084546",
+            notes="Best of the SREFs for a polished, fantasy illustration look[cite: 65, 86]."
         ),
-        profile="xp1wzqg",
-        sref=None,
-        sw=None,
-        notes="Use when you want drawn texture over polish. Works well without heavy params."
-    ),
-    Preset(
-        name="Cinematic Cover (Painterly Manga)",
-        description="Emotional cover illustration; cinematic lighting and atmosphere.",
-        base_prompt=(
-            "Painterly manga cover illustration, half-body, cinematic lighting, emotional atmosphere, "
-            "high contrast, subtle texture, {subject}"
-            "{scene}"
+    ],
+    "Graphic": [
+        Preset(
+            name="Clean Single-Line",
+            description="Crisp contour lines and graphic simplicity[cite: 87].",
+            base_prompt="Manga inspired, black and white, crisp single-line weight sketch, clean graphic style, {subject}, {scene}",
+            profile="xp1wzqg",
+            sref="3599646714::1",
+            sw=35,
+            notes="Excellent single line weight for a simplified anime look[cite: 87]."
         ),
-        profile="xp1wzqg",
-        sref="2180084546",
-        sw=None,
-        notes="If it looks too generic, try --sw 20–40. Add mood words: 'noir', 'neon haze', etc."
-    ),
-    Preset(
-        name="Horror Cover (Unsettling B&W)",
-        description="Creepy manga cover; uncanny detail, heavy shadow, unsettling expression.",
-        base_prompt=(
-            "Black and white manga cover, half-body, unsettling expression, uncanny detail, "
-            "heavy shadows, disturbing atmosphere, high contrast inks, {subject}"
-            "{scene}"
+        Preset(
+            name="Horror/Unsettling Cover",
+            description="Creepy, high-contrast, eerie mood.",
+            base_prompt="In the style of Junji Ito, Gege Akutami, Kazuma Kaneko, manga cover, eerie mood, high-contrast black and white, unsettling detail, {subject}",
+            profile="xp1wzqg",
+            notes="Flagged as 'really creepy'—worth experimenting for dark themes[cite: 92, 99]."
         ),
-        profile="xp1wzqg",
-        sref=None,
-        sw=None,
-        notes="Toggle this when you want the vibe to go wrong (in a good way)."
-    ),
-]
-
-FAVORITES = [
-    # Keep this as short curated 'random favorite' prompts
-    {
-        "name": "Action Panel Default",
-        "subject": "cyberpunk heroine, superhero pose, dynamic punch",
-        "scene": " low-angle camera, city alley, rain, neon signage",
-        "preset": "Action Manga Panel (Perspective, Half-body)",
-        "overrides": {"sw": 30}
-    },
-    {
-        "name": "Single Line Poster",
-        "subject": "mysterious femme fatale, sharp eyes, confident smirk",
-        "scene": " minimal background, strong silhouette",
-        "preset": "Single Line Weight Sketch (Clean Graphic)",
-        "overrides": {"sw": 40}
-    },
-]
-
-def find_preset(name: str) -> Preset:
-    for p in PRESETS:
-        if p.name == name:
-            return p
-    return PRESETS[0]
-
-def normalize_list_field(raw: str) -> List[str]:
-    """
-    Accepts newline or comma separated strings. Returns a list of non-empty trimmed items.
-    """
-    if not raw:
-        return []
-    parts = []
-    for line in raw.replace(",", "\n").split("\n"):
-        s = line.strip()
-        if s:
-            parts.append(s)
-    return parts
-
-def build_prompt_and_params(
-    preset: Preset,
-    subject: str,
-    scene: str,
-    image_prompt_urls: List[str],
-    cref_urls: List[str],
-    sref_value: Optional[str],
-    sw_value: Optional[int],
-    cw_value: Optional[int],
-    iw_value: Optional[float],
-    stylize_value: Optional[int],
-    extra_params: str,
-) -> (str, str):
-    scene_block = ""
-    if scene.strip():
-        scene_block = f", {scene.strip()}"
-
-    prompt_body = preset.base_prompt.format(subject=subject.strip(), scene=scene_block)
-
-    # Image prompt URLs go at the front of the prompt (classic MJ behavior)
-    prefix = ""
-    if image_prompt_urls:
-        prefix = " ".join(image_prompt_urls) + " "
-
-    full_prompt = (prefix + prompt_body).strip()
-
-    params = []
-    # Core model
-    params.append(f"--niji {preset.niji}")
-    if preset.profile:
-        params.append(f"--profile {preset.profile}")
-
-    # Style ref
-    if sref_value:
-        params.append(f"--sref {sref_value}")
-
-    # Style weight
-    if sw_value is not None:
-        params.append(f"--sw {sw_value}")
-
-    # Character refs
-    if cref_urls:
-        params.append(f"--cref " + " ".join(cref_urls))
-    if cw_value is not None and cref_urls:
-        params.append(f"--cw {cw_value}")
-
-    # Image influence
-    if iw_value is not None and image_prompt_urls:
-        # MJ expects number; keep as provided
-        params.append(f"--iw {iw_value}")
-
-    # Stylize
-    if stylize_value is not None:
-        params.append(f"--stylize {stylize_value}")
-
-    # Extra params (raw)
-    if extra_params.strip():
-        params.append(extra_params.strip())
-
-    return full_prompt, " ".join(params)
+    ]
+}
 
 # -----------------------------
-# UI
+# Sidebar Chooser & Logic
 # -----------------------------
-st.title("Niji 6 Prompt Builder (Bare-bones, text-only)")
-st.caption("Pick a preset → type subject → optionally add refs and tweak weights → copy prompt.")
+with st.sidebar:
+    st.title("🎯 2-Second Chooser")
+    st.markdown("""
+    **Quick Guide[cite: 94]:**
+    - **Action/Panel?** → Action Stack
+    - **Wide Shot/Film?** → Cinematic Stack
+    - **Book Cover?** → Painterly
+    - **Gritty/Sketch?** → Inoue Lane
+    - **Clean/Flat?** → Single-Line
+    """)
+    st.divider()
+    
+    # Sexy Jutsu Toggle 
+    sexy_jutsu = st.toggle("✨ Sexy Jutsu Moodboard", help="Swaps default profile for the multi-profile 'Lady Manga' mix.")
+    moodboard_profile = "1vkrwxy elkd3fo pjmf3zg ulvca2i" if sexy_jutsu else None
 
-# Random favorite
-colA, colB = st.columns([1, 1])
-with colA:
-    if st.button("🎲 Random Favorite"):
-        fav = random.choice(FAVORITES)
-        st.session_state["preset_name"] = fav["preset"]
-        st.session_state["subject"] = fav["subject"]
-        st.session_state["scene"] = fav["scene"]
-        st.session_state["fav_overrides"] = fav.get("overrides", {})
-        st.toast(f"Loaded: {fav['name']}", icon="🎲")
+# -----------------------------
+# Main UI
+# -----------------------------
+st.title("Niji 6 Illustrator Partner")
 
-with colB:
-    st.write("")  # spacing
+tab1, tab2, tab3 = st.tabs(["Action Stacks", "Cinematic Stacks", "Graphic Stacks"])
 
-preset_names = [p.name for p in PRESETS]
-preset_name = st.selectbox(
-    "Choose a Look / Lane",
-    preset_names,
-    index=preset_names.index(st.session_state.get("preset_name", preset_names[0]))
-    if st.session_state.get("preset_name") in preset_names else 0
-)
-preset = find_preset(preset_name)
+def render_preset_ui(presets: List[Preset]):
+    selected_name = st.selectbox("Choose a Look", [p.name for p in presets])
+    selected_preset = next(p for p in presets if p.name == selected_name)
+    
+    st.caption(f"**Vibe:** {selected_preset.description}")
+    if selected_preset.notes:
+        st.info(selected_preset.notes)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        subj = st.text_input("Subject", "cyberpunk heroine, superhero pose")
+    with col2:
+        scn = st.text_input("Scene/Camera", "low-angle, neon rain, city alley")
+        
+    # Parameters
+    with st.expander("Micro-Tuning Knobs", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            sw_val = st.slider("Style Weight (--sw)", 0, 1000, selected_preset.sw if selected_preset.sw else 30)
+        with c2:
+            stylize = st.slider("Stylize", 0, 1000, 100 if "ArtGerm" not in selected_name else 1000)
+        with c3:
+            ar = st.text_input("Aspect Ratio", "--ar 2:3")
 
-st.markdown(f"**What it’s for:** {preset.description}")
-if preset.notes:
-    st.info(preset.notes)
+    # Build Prompt
+    final_subject = subj.strip()
+    final_scene = f", {scn.strip()}" if scn.strip() else ""
+    prompt_text = selected_preset.base_prompt.format(subject=final_subject, scene=final_scene)
+    
+    # Params
+    profile = moodboard_profile if moodboard_profile else selected_preset.profile
+    sref = f"--sref {selected_preset.sref}" if selected_preset.sref else ""
+    
+    full_command = f"/imagine prompt: {prompt_text} --niji 6 --profile {profile} {sref} --sw {sw_val} --stylize {stylize} {ar}".replace("  ", " ")
+    
+    st.subheader("Final Command")
+    st.code(full_command)
 
-subject = st.text_input(
-    "Subject (what you want to see)",
-    value=st.session_state.get("subject", "seductive cyberpunk heroine, superhero pose")
-)
-
-scene = st.text_input(
-    "Scene / Camera (optional)",
-    value=st.session_state.get("scene", "low-angle camera, neon rain, city alley")
-)
-
-with st.expander("Advanced (Refs + Weights + Params)", expanded=True):
-    st.markdown("**Refs**")
-    st.caption("Tip: For --cref tests, your notes prefer using grayscale character refs to improve fidelity.")
-
-    image_urls_raw = st.text_area(
-        "Image prompt URL(s) (optional) — goes at the FRONT of prompt. One per line or comma-separated.",
-        height=90,
-        value=""
-    )
-    image_prompt_urls = normalize_list_field(image_urls_raw)
-
-    cref_raw = st.text_area(
-        "Character reference URL(s) for --cref (optional). One per line or comma-separated.",
-        height=90,
-        value=""
-    )
-    cref_urls = normalize_list_field(cref_raw)
-
-    st.markdown("**Style ref + weights**")
-    default_sref = preset.sref or ""
-    sref_value = st.text_input("Style ref (--sref)", value=default_sref)
-
-    # Apply favorite overrides if present
-    fav_overrides = st.session_state.get("fav_overrides", {})
-    sw_default = fav_overrides.get("sw", preset.sw)
-    cw_default = fav_overrides.get("cw", 20)
-    iw_default = fav_overrides.get("iw", 1.0)
-
-    sw_value = st.slider("Style weight (--sw)", 0, 200, int(sw_default) if sw_default is not None else 0)
-    # If user sets sw to 0, treat as "unset" unless they intentionally want 0
-    sw_enabled = st.checkbox("Enable --sw", value=(preset.sw is not None or "sw" in fav_overrides))
-    if not sw_enabled:
-        sw_value_out = None
-    else:
-        sw_value_out = sw_value
-
-    cw_enabled = st.checkbox("Enable --cw (only applies if --cref provided)", value=False)
-    cw_value = st.slider("Character weight (--cw)", 0, 100, int(cw_default)) if cw_enabled else None
-
-    iw_enabled = st.checkbox("Enable --iw (only applies if image prompt URLs provided)", value=False)
-    iw_value = st.slider("Image weight (--iw)", 0.0, 3.0, float(iw_default), 0.1) if iw_enabled else None
-
-    stylize_enabled = st.checkbox("Enable --stylize", value=False)
-    stylize_value = st.slider("--stylize", 0, 1000, 100) if stylize_enabled else None
-
-    extra_params = st.text_input("Extra params (raw)", value="")  # e.g., --ar 2:3 --seed 123
-
-full_prompt, params_str = build_prompt_and_params(
-    preset=preset,
-    subject=subject,
-    scene=scene,
-    image_prompt_urls=image_prompt_urls,
-    cref_urls=cref_urls,
-    sref_value=sref_value.strip() if sref_value.strip() else None,
-    sw_value=sw_value_out,
-    cw_value=cw_value,
-    iw_value=iw_value,
-    stylize_value=stylize_value,
-    extra_params=extra_params,
-)
-
-st.subheader("Output")
-st.text_area("Full Prompt (copy/paste into Midjourney)", value=f"{full_prompt} {params_str}".strip(), height=140)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.text_area("Prompt only", value=full_prompt, height=120)
-with col2:
-    st.text_area("Params only", value=params_str, height=120)
-
-st.caption("Workflow suggestion: Start with a preset → only touch --sw first → then add refs if needed.")
+with tab1: render_preset_ui(PRESETS["Action"])
+with tab2: render_preset_ui(PRESETS["Cinematic"])
+with tab3: render_preset_ui(PRESETS["Graphic"])
