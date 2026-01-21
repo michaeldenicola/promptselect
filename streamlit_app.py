@@ -264,6 +264,20 @@ PRESETS = [
         notes="Excellent for fantasy character concepts.",
         rating="High Level"
     ),
+    StylePreset(
+        id="seductive_anime",
+        name="Seductive Anime",
+        category="Cinematic",
+        icon="💋",
+        description="Dollcore pin-up style",
+        vibe="Retro pin-up, semi-realistic, pixiv aesthetic, charming",
+        base_prompt="dollcore, anime aesthetic, semi realistic, 1girl, pixiv style, detailed face in the style of J Scott Campbell and ArtGerm, Retro pin up girls poster style, full body, detailed glossy lips, anime, anime style, masterpiece, heels, stockings, charming, blush",
+        profile="xp1wzqg",
+        sref="3334207109",
+        sw=35,
+        notes="Use --stylize 1000 for best results. Pre-set to 2:3 aspect ratio.",
+        rating="🔥 Spicy"
+    ),
     
     # GRAPHIC
     StylePreset(
@@ -311,8 +325,8 @@ QUICK_MAP = {
     "⚡ Action Panel": "action_manga",
     "🎬 Movie Frame": "movie_frame", 
     "📖 Book Cover": "painterly_cover",
+    "💋 Seductive": "seductive_anime",
     "✏️ Sketchy": "sketchbook_inoue",
-    "〰️ Clean Line": "single_line",
     "👁️ Horror": "horror_cover",
 }
 
