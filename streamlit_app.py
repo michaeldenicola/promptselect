@@ -101,8 +101,9 @@ st.title("Niji 6 Illustrator Partner")
 
 tab1, tab2, tab3 = st.tabs(["Action Stacks", "Cinematic Stacks", "Graphic Stacks"])
 
-def render_preset_ui(presets: List[Preset]):
-    selected_name = st.selectbox("Choose a Look", [p.name for p in presets])
+def render_preset_ui(presets: List[Preset], key_prefix: str):
+    # Use the key_prefix to make this selectbox unique across tabs
+    selected_name = st.selectbox("Choose a Look", [p.name for p in presets], key=f"{key_prefix}_select")
     selected_preset = next(p for p in presets if p.name == selected_name)
     
     st.caption(f"**Vibe:** {selected_preset.description}")
@@ -111,20 +112,25 @@ def render_preset_ui(presets: List[Preset]):
     
     col1, col2 = st.columns(2)
     with col1:
-        subj = st.text_input("Subject", "cyberpunk heroine, superhero pose")
+        # Added unique key
+        subj = st.text_input("Subject", "cyberpunk heroine, superhero pose", key=f"{key_prefix}_subj")
     with col2:
-        scn = st.text_input("Scene/Camera", "low-angle, neon rain, city alley")
+        # Added unique key
+        scn = st.text_input("Scene/Camera", "low-angle, neon rain, city alley", key=f"{key_prefix}_scn")
         
-    # Parameters
     with st.expander("Micro-Tuning Knobs", expanded=True):
         c1, c2, c3 = st.columns(3)
         with c1:
-            sw_val = st.slider("Style Weight (--sw)", 0, 1000, selected_preset.sw if selected_preset.sw else 30)
+            # Added unique key
+            sw_val = st.slider("Style Weight (--sw)", 0, 1000, selected_preset.sw if selected_preset.sw else 30, key=f"{key_prefix}_sw")
         with c2:
-            stylize = st.slider("Stylize", 0, 1000, 100 if "ArtGerm" not in selected_name else 1000)
+            # Added unique key
+            stylize = st.slider("Stylize", 0, 1000, 100 if "ArtGerm" not in selected_name else 1000, key=f"{key_prefix}_stylize")
         with c3:
-            ar = st.text_input("Aspect Ratio", "--ar 2:3")
+            # Added unique key
+            ar = st.text_input("Aspect Ratio", "--ar 2:3", key=f"{key_prefix}_ar")
 
+    # ... (Rest of your prompt building logic remains the same)
     # Build Prompt
     final_subject = subj.strip()
     final_scene = f", {scn.strip()}" if scn.strip() else ""
@@ -139,6 +145,9 @@ def render_preset_ui(presets: List[Preset]):
     st.subheader("Final Command")
     st.code(full_command)
 
-with tab1: render_preset_ui(PRESETS["Action"])
-with tab2: render_preset_ui(PRESETS["Cinematic"])
-with tab3: render_preset_ui(PRESETS["Graphic"])
+with tab1: 
+    render_preset_ui(PRESETS["Action"], key_prefix="action_tab")
+with tab2: 
+    render_preset_ui(PRESETS["Cinematic"], key_prefix="cinematic_tab")
+with tab3: 
+    render_preset_ui(PRESETS["Graphic"], key_prefix="graphic_tab")
